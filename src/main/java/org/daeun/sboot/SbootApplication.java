@@ -17,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Query;
 @SpringBootApplication
 public class SbootApplication implements CommandLineRunner{
 	
+	//인증키 52424941656b696d34374c62564c4a
 	
 	@Autowired
 	private MongoTemplate mongoTemplate;
