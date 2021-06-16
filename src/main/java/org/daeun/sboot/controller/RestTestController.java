@@ -28,7 +28,7 @@ public class RestTestController {
 		return str + ":test complete";
 	}
 	
-	@GetMapping("/stnApi")
+	@GetMapping("/STNtime")
 	public String callAPI() {
 		HashMap<String, Object> result = new HashMap<String, Object>();
 		
@@ -54,6 +54,8 @@ public class RestTestController {
             
             ObjectMapper mapper = new ObjectMapper();
             jsonInString = mapper.writeValueAsString(resultMap.getBody());
+            
+            System.out.println(result);
            
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			result.put("statusCode", e.getRawStatusCode());
