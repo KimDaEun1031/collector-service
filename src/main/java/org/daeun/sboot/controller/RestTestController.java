@@ -7,10 +7,10 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -18,50 +18,63 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 @RestController
 public class RestTestController {
 	
-	@RequestMapping("/restTest")
-	public String restTest(@RequestParam String str) {
-		return str + ":test complete";
-	}
+	//인증키 74575561446b696d363878416e4f54
 	
-	@GetMapping("/STNtime")
+	@GetMapping("/test") 
+	public String test() {
+		RestTemplate restTemplate = new RestTemplate();
+		String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+		return restTemplate.getForObject(url, String.class);
+	}
+
+	
+	@GetMapping("/subway")
 	public String callAPI() {
-		HashMap<String, Object> result = new HashMap<String, Object>();
+		Map<String, Object> result = new HashMap<String, Object>();
 		
 		String jsonInString = "";
 		
 		try {
-			HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
-			factory.setConnectTimeout(5000);
-			factory.setReadTimeout(5000);
-			RestTemplate restTemplate = new RestTemplate(factory);
+			RestTemplate restTemplate = new RestTemplate();
+			
+			//String url = "http://openapi.seoul.go.kr:8088/52424941656b696d34374c62564c4a/json/SearchSTNTimeTableByIDService/1/5/0309/1/1/";
+			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+			
+			//UriComponents uri = UriComponentsBuilder.fromHttpUrl(url+"?"+"serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D").build(false);
+			//UriComponents uri = UriComponentsBuilder.fromHttpUrl(url).build(false);
 			
 			HttpHeaders header = new HttpHeaders();
 			HttpEntity<?> entity = new HttpEntity<>(header);
 			
-			String url = "http://openapi.seoul.go.kr:8088/52424941656b696d34374c62564c4a/json/SearchSTNTimeTableByIDService/1/5/0309/1/1/";
+			//System.out.println(uri.toString());
 			
-			 UriComponents uri = UriComponentsBuilder.fromHttpUrl(url).build();
+			ResponseEntity<Map> resultMap = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+			System.out.println(resultMap);
 			
-			ResponseEntity<Map> resultMap = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, Map.class);
+			
 			result.put("statusCode", resultMap.getStatusCodeValue()); //http status code를 확인
             result.put("header", resultMap.getHeaders()); //헤더 정보 확인
             result.put("body", resultMap.getBody()); //실제 데이터 정보 확인
             
             ObjectMapper mapper = new ObjectMapper();
-            jsonInString = mapper.writeValueAsString(resultMap.getBody());
+//            jsonInString = mapper.writeValueAsString(resultMap.getBody());
             
-            System.out.println(result);
+            
+		
            
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			result.put("statusCode", e.getRawStatusCode());
             result.put("body"  , e.getStatusText());
             System.out.println("dfdfdfdf");
-            System.out.println(e.toString());
+            System.out.println(e);
+            System.out.println(result);
 	 
 		} catch (Exception e) {
             result.put("statusCode", "999");
@@ -71,4 +84,33 @@ public class RestTestController {
  
         return jsonInString;
 	}
+	
+//	@GetMapping("api")
+//	public String callApiWithXml() {
+//		  StringBuffer result = new StringBuffer();
+//	        try {
+//	            String apiUrl = "http://apis.data.go.kr/B552584/EvCharger/getChargerInfo?" +
+//	                    "serviceKey=[Service Key]" +
+//	                    "&numOfRows=10" +
+//	                    "&pageNo=4";
+//	            URL url = new URL(apiUrl);
+//	            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+//	            urlConnection.setRequestMethod("GET");
+//
+//	            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), "UTF-8"));
+//
+//	            String returnLine;
+//	            result.append("<xmp>");
+//	            while((returnLine = bufferedReader.readLine()) != null) {
+//	                result.append(returnLine + "\n");
+//	            }
+//	            urlConnection.disconnect();
+//	        } catch (Exception e) {
+//	            e.printStackTrace();
+//	        }
+//
+//	        return result + "</xmp>";
+//	}
+//	
+	
 }
