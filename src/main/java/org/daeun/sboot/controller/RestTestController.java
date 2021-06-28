@@ -4,11 +4,14 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.print.DocFlavor.STRING;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -19,37 +22,33 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 public class RestTestController {
-	
-	//인증키 74575561446b696d363878416e4f54
 
-	
-	@GetMapping("/subway")
-	public String callAPI() {
+	@GetMapping("/covid_vaccine_stat")
+	public String callAPI(@RequestParam String month, String day) {
 		Map<String, Object> result = new HashMap<String, Object>();
 		
 		String jsonInString = "";
-		
+
 		try {
 			RestTemplate restTemplate = new RestTemplate();
 			
-			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+					+ "page=1"
+					+ "&perPage=18"
+					+ "&cond%5BbaseDate%3A%3AEQ%5D=2021-"+ month +"-"+ day +"%2000%3A00%3A00"
+					+ "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
 			
 			HttpHeaders header = new HttpHeaders();
 			HttpEntity<?> entity = new HttpEntity<>(header);
 
-			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
-			System.out.println(resultMap);
+			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);			
 			
-			
-			result.put("statusCode", resultMap.getStatusCodeValue()); //http status code를 확인
-            result.put("header", resultMap.getHeaders()); //헤더 정보 확인
-            result.put("body", resultMap.getBody()); //실제 데이터 정보 확인
+			result.put("statusCode", resultMap.getStatusCodeValue());
+            result.put("header", resultMap.getHeaders());
+            result.put("body", resultMap.getBody());
             
             ObjectMapper mapper = new ObjectMapper();
             jsonInString = mapper.writeValueAsString(resultMap.getBody());
-            
-            
-		
            
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			result.put("statusCode", e.getRawStatusCode());
