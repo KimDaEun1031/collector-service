@@ -51,6 +51,8 @@ public class RestTestController {
             
             ObjectMapper mapper = new ObjectMapper();
             jsonInString = mapper.writeValueAsString(resultMap.getBody());
+
+
            
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			result.put("statusCode", e.getRawStatusCode());
