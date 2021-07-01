@@ -1,12 +1,25 @@
 package org.daeun.sboot.controller;
 
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLEncoder;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
+import org.daeun.sboot.repository.CovidVaccineStatRepository;
+import org.daeun.sboot.vo.CovidVaccineStatVO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -24,6 +37,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RestController
 @Slf4j
 public class CovidVaccineStatController {
+
+	@Autowired
+	private CovidVaccineStatRepository repository;
 
 	@GetMapping("/covidVaccineStat")
 	public String covidVaccineStat(@RequestParam String month, String day, String sido) {
@@ -92,10 +108,15 @@ public class CovidVaccineStatController {
 			result.put("header", resultMap.getHeaders());
 			result.put("body", resultMap.getBody());
 
-			ObjectMapper mapper = new ObjectMapper();
-			jsonInString = mapper.writeValueAsString(resultMap.getBody());
+			Gson gson = new Gson();
+			JsonParser jsonParser = new JsonParser();
 
-			log.info(jsonInString);
+			jsonInString = gson.toJson(resultMap.getBody());
+			JsonElement element = jsonParser.parse(jsonInString);
+			JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
+
+
+			log.info(String.valueOf(arrayData));
 
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			result.put("statusCode", e.getRawStatusCode());
@@ -151,6 +172,111 @@ public class CovidVaccineStatController {
 		}
 
 		return total;
+	}
+
+
+	@GetMapping("/covidVaccineStatRow")
+	public String covidVaccineStatRow(@RequestParam(required = false, defaultValue = "18") int perSize,
+									  @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now()}") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate baseDate) {
+
+		Map<String, Object> result = new HashMap<String, Object>();
+
+		String jsonInString = "";
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+
+			LocalDate startDate = LocalDate.of(2021, 03, 11);
+			LocalDate nowDate = LocalDate.now();
+
+			long betweenDays = ChronoUnit.DAYS.between(startDate, nowDate);
+
+			for (int i=0; i<=betweenDays; i++) {
+				baseDate = startDate;
+				startDate = startDate.plusDays(1);
+				String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+						+ "&perPage=" +perSize
+						+ "&cond%5BbaseDate%3A%3AEQ%5D="+ baseDate +"%2000%3A00%3A00"
+						+ "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+
+				log.info(url);
+
+				HttpHeaders header = new HttpHeaders();
+				HttpEntity<?> entity = new HttpEntity<>(header);
+
+				log.info("get TodayData");
+
+				ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+				result.put("statusCode", resultMap.getStatusCodeValue());
+				result.put("header", resultMap.getHeaders());
+				result.put("body", resultMap.getBody());
+
+				Gson gson = new Gson();
+				JsonParser jsonParser = new JsonParser();
+
+				jsonInString = gson.toJson(resultMap.getBody());
+				JsonElement element = jsonParser.parse(jsonInString);
+				JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
+
+				List<CovidVaccineStatVO> rowList = new ArrayList<>();
+
+				for(int j=0; j<arrayData.size(); j++) {
+					JsonObject row = (JsonObject) arrayData.get(j);
+
+					CovidVaccineStatVO covidVO = gson.fromJson(row, CovidVaccineStatVO.class);
+					rowList.add(covidVO);
+
+				}
+
+				repository.insert(rowList);
+
+			}
+
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			result.put("statusCode", e.getRawStatusCode());
+			result.put("body", e.getStatusText());
+			log.error(e.toString());
+
+		} catch (Exception e) {
+			result.put("statusCode", "999");
+			result.put("body", "excpetion 오류");
+			log.error(e.toString());
+		}
+
+		return jsonInString;
+	}
+
+	//practice send json
+	public String sendJsonData(String text) {
+
+		try {
+			JsonParser jsonParser = new JsonParser();
+			JsonElement element = jsonParser.parse(text);
+
+			String hostUrl = "http://localhost:9091/getJson";
+			HttpURLConnection conn = null;
+
+			URL url = new URL(hostUrl);
+			conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Content-Type", "application/json");
+
+			conn.setDoOutput(true);
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()));
+
+			bw.write(element.toString());
+			bw.flush();
+			bw.close();
+
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			log.error(e.toString());
+
+		} catch (Exception e) {
+			log.error(e.toString());
+		}
+
+		return text;
 	}
 
 }
