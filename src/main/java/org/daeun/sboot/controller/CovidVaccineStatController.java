@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -25,25 +26,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class CovidVaccineStatController {
 
 	@GetMapping("/covidVaccineStat")
-	public String callAPI(@RequestParam String month, String day, String sido) {
+	public String covidVaccineStat(@RequestParam String month, String day, String sido) {
 		Map<String, Object> result = new HashMap<String, Object>();
 
-		String test = "";
+		String jsonInString = "";
 		try {
 			RestTemplate restTemplate = new RestTemplate();
-
-			//포맷으로 다시 정리
-			//복사해서 만들기
 
 			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
 					+ "page=1"
 					+ "&perPage=18"
 					+ "&cond%5BbaseDate%3A%3AEQ%5D=2021-"+ month +"-"+ day +"%2000%3A00%3A00"
 					+ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8") + "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
-			//로그 쓰기
+
 			HttpHeaders header = new HttpHeaders();
 			HttpEntity<?> entity = new HttpEntity<>(header);
-			//로그로 데이터를 가져왔습니다라고 쓸듯
+
 			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);			
 			
 			result.put("statusCode", resultMap.getStatusCodeValue());
@@ -51,22 +49,108 @@ public class CovidVaccineStatController {
             result.put("body", resultMap.getBody());
 
             ObjectMapper mapper = new ObjectMapper();
-            test = mapper.writeValueAsString(resultMap.getBody());
-            //스트링 로그로
+			jsonInString = mapper.writeValueAsString(resultMap.getBody());
            
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			result.put("statusCode", e.getRawStatusCode());
 			result.put("body", e.getStatusText());
+			log.error(e.toString());
 
 		} catch (Exception e) {
 			result.put("statusCode", "999");
 			result.put("body", "excpetion 오류");
-			log.info(e.toString());
+			log.error(e.toString());
         }
 
-		return test;
+		return jsonInString;
 	}
 
 
+	@GetMapping("/covidVaccineStatBatch")
+	public String covidVaccineStatBatch(String total) {
+
+		Map<String, Object> result = new HashMap<String, Object>();
+
+		String jsonInString = "";
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+
+			String totalCount = covidVaccineStatTotalCount(total);
+			log.info(totalCount);
+
+			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?perPage="+totalCount+"&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+			log.info(url);
+
+			HttpHeaders header = new HttpHeaders();
+			HttpEntity<?> entity = new HttpEntity<>(header);
+
+			log.info("get TotalData");
+
+			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+			result.put("statusCode", resultMap.getStatusCodeValue());
+			result.put("header", resultMap.getHeaders());
+			result.put("body", resultMap.getBody());
+
+			ObjectMapper mapper = new ObjectMapper();
+			jsonInString = mapper.writeValueAsString(resultMap.getBody());
+
+			log.info(jsonInString);
+
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			result.put("statusCode", e.getRawStatusCode());
+			result.put("body", e.getStatusText());
+			log.error(e.toString());
+
+		} catch (Exception e) {
+			result.put("statusCode", "999");
+			result.put("body", "excpetion 오류");
+			log.error(e.toString());
+		}
+
+		return jsonInString;
+	}
+
+	public String covidVaccineStatTotalCount(String total) {
+		Map<String, Object> result = new HashMap<String, Object>();
+
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+
+			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+			log.info(url);
+
+			HttpHeaders header = new HttpHeaders();
+			HttpEntity<?> entity = new HttpEntity<>(header);
+			log.info("TotalCount getData");
+
+			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+			result.put("statusCode", resultMap.getStatusCodeValue());
+			result.put("header", resultMap.getHeaders());
+			result.put("body", resultMap.getBody());
+
+			Gson gson = new Gson();
+			JsonParser jsonParser = new JsonParser();
+
+			String jsonInString = gson.toJson(resultMap.getBody());
+			JsonElement element = jsonParser.parse(jsonInString);
+			JsonPrimitive primitive = (JsonPrimitive) element.getAsJsonObject().get("totalCount");
+			total = gson.fromJson(primitive, String.class);
+			log.info(total);
+
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			result.put("statusCode", e.getRawStatusCode());
+			result.put("body", e.getStatusText());
+			log.error(e.toString());
+
+		} catch (Exception e) {
+			result.put("statusCode", "999");
+			result.put("body", "excpetion 오류");
+			log.error(e.toString());
+		}
+
+		return total;
+	}
 
 }
