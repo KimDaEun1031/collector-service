@@ -218,7 +218,7 @@ public class CovidVaccineStatController {
 				JsonElement element = jsonParser.parse(jsonInString);
 				JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
 
-				sendJsonData(arrayData);
+				sendCovidStat(arrayData);
 
 				/*List<CovidVaccineStatVO> rowList = new ArrayList<>();
 
@@ -249,7 +249,7 @@ public class CovidVaccineStatController {
 	}
 
 //	practice send json
-	public Object sendJsonData(@RequestBody JsonArray arrayData) {
+	public Object sendCovidStat(@RequestBody JsonArray arrayData) {
 		MultiValueMap<String, Object> result = new LinkedMultiValueMap<String, Object>();
 		result.add("arrayData", arrayData.toString());
 
@@ -260,7 +260,7 @@ public class CovidVaccineStatController {
 		try {
 			RestTemplate restTemplate = new RestTemplate();
 
-			String url = "http://localhost:9091/getJson";
+			String url = "http://localhost:9091/saveCovidVaccineStat";
 			log.info(url);
 
 			HttpHeaders header = new HttpHeaders();
