@@ -16,17 +16,17 @@ import java.util.Map;
 
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.Response;
 import org.daeun.sboot.repository.CovidVaccineStatRepository;
 import org.daeun.sboot.vo.CovidVaccineStatVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.*;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.ResizableByteArrayOutputStream;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -190,7 +190,7 @@ public class CovidVaccineStatController {
 
 			long betweenDays = ChronoUnit.DAYS.between(startDate, nowDate);
 
-			for (int i=0; i<=betweenDays; i++) {
+			for (int i=0; i<1; i++) {
 				baseDate = startDate;
 				startDate = startDate.plusDays(1);
 				String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
@@ -218,7 +218,9 @@ public class CovidVaccineStatController {
 				JsonElement element = jsonParser.parse(jsonInString);
 				JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
 
-				List<CovidVaccineStatVO> rowList = new ArrayList<>();
+				sendJsonData(arrayData);
+
+				/*List<CovidVaccineStatVO> rowList = new ArrayList<>();
 
 				for(int j=0; j<arrayData.size(); j++) {
 					JsonObject row = (JsonObject) arrayData.get(j);
@@ -228,7 +230,7 @@ public class CovidVaccineStatController {
 
 				}
 
-				repository.insert(rowList);
+				repository.insert(rowList);*/
 
 			}
 
@@ -246,37 +248,53 @@ public class CovidVaccineStatController {
 		return jsonInString;
 	}
 
-	//practice send json
-	public String sendJsonData(String text) {
+//	practice send json
+	public Object sendJsonData(@RequestBody JsonArray arrayData) {
+		MultiValueMap<String, Object> result = new LinkedMultiValueMap<String, Object>();
+		result.add("arrayData", arrayData.toString());
 
+		Gson gson = new Gson();
+		JsonParser jsonParser = new JsonParser();
+
+		log.info(String.valueOf(arrayData));
 		try {
-			JsonParser jsonParser = new JsonParser();
-			JsonElement element = jsonParser.parse(text);
+			RestTemplate restTemplate = new RestTemplate();
 
-			String hostUrl = "http://localhost:9091/getJson";
-			HttpURLConnection conn = null;
+			String url = "http://localhost:9091/getJson";
+			log.info(url);
 
-			URL url = new URL(hostUrl);
-			conn = (HttpURLConnection) url.openConnection();
+			HttpHeaders header = new HttpHeaders();
+			header.setContentType(MediaType.APPLICATION_JSON);
+			HttpEntity<?> entity = new HttpEntity<>(result,header);
+			log.info(entity.toString());
 
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Content-Type", "application/json");
+			ResponseEntity<Response> response = restTemplate.postForEntity(url, entity, Response.class);
+//			ResponseEntity<MultiValueMap> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.POST, entity, MultiValueMap.class);
 
-			conn.setDoOutput(true);
-			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()));
+			result.add("body", response.getBody());
 
-			bw.write(element.toString());
-			bw.flush();
-			bw.close();
+//			result.put("statusCode", resultMap.getStatusCodeValue());
+//			result.put("header", resultMap.getHeaders());
+//			result.put("body", resultMap.getBody());
+
+			log.info(String.valueOf(result));
+
+
+
+
+
+
 
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
+//			result.put("statusCode", e.getRawStatusCode());
+//			result.put("body", e.getStatusText());
 			log.error(e.toString());
 
 		} catch (Exception e) {
 			log.error(e.toString());
 		}
+		return arrayData;
 
-		return text;
 	}
 
 }
