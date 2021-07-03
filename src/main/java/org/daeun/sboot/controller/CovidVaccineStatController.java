@@ -33,6 +33,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.daeun.sboot.constants.Constants.ODCLOUD_API_PERSIZE;
+
 
 @RestController
 @Slf4j
@@ -175,13 +177,12 @@ public class CovidVaccineStatController {
 	}
 
 
-	@GetMapping("/covidVaccineStatRow")
-	public String covidVaccineStatRow(@RequestParam(required = false, defaultValue = "18") int perSize,
-									  @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now()}") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate baseDate) {
+	public String readCovidVaccineStatFullData() {
 
 		Map<String, Object> result = new HashMap<String, Object>();
 
 		String jsonInString = "";
+
 		try {
 			RestTemplate restTemplate = new RestTemplate();
 
@@ -191,10 +192,10 @@ public class CovidVaccineStatController {
 			long betweenDays = ChronoUnit.DAYS.between(startDate, nowDate);
 
 			for (int i=0; i<1; i++) {
-				baseDate = startDate;
+				LocalDate baseDate = startDate;
 				startDate = startDate.plusDays(1);
 				String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
-						+ "&perPage=" +perSize
+						+ "&perPage=" +ODCLOUD_API_PERSIZE
 						+ "&cond%5BbaseDate%3A%3AEQ%5D="+ baseDate +"%2000%3A00%3A00"
 						+ "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
 
