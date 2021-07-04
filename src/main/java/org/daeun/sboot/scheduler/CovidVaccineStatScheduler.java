@@ -13,7 +13,7 @@ public class CovidVaccineStatScheduler {
     @Autowired
     CovidVaccineStatController controller;
 
-    @Scheduled(cron = "10 * * * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     public void covidVaccineStatPushSchedule() {
         controller.readCovidVaccineStatTodayData();
         log.info("push success!");
