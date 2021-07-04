@@ -1,13 +1,8 @@
 package org.daeun.sboot.controller;
 
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.time.LocalDate;
-import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,7 +12,6 @@ import java.util.Map;
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.Response;
-import org.daeun.sboot.repository.CovidVaccineStatRepository;
 import org.daeun.sboot.vo.CovidVaccineStatVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
@@ -39,9 +33,6 @@ import static org.daeun.sboot.constants.Constants.ODCLOUD_API_PERSIZE;
 @RestController
 @Slf4j
 public class CovidVaccineStatController {
-
-	@Autowired
-	private CovidVaccineStatRepository repository;
 
 	@GetMapping("/covidVaccineStat")
 	public String covidVaccineStat(@RequestParam String month, String day, String sido) {
@@ -191,7 +182,7 @@ public class CovidVaccineStatController {
 
 			long betweenDays = ChronoUnit.DAYS.between(startDate, nowDate);
 
-			for (int i=0; i<1; i++) {
+			for (int i=0; i<betweenDays; i++) {
 				LocalDate baseDate = startDate;
 				startDate = startDate.plusDays(1);
 				String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
@@ -221,17 +212,6 @@ public class CovidVaccineStatController {
 
 				sendCovidStat(arrayData);
 
-				/*List<CovidVaccineStatVO> rowList = new ArrayList<>();
-
-				for(int j=0; j<arrayData.size(); j++) {
-					JsonObject row = (JsonObject) arrayData.get(j);
-
-					CovidVaccineStatVO covidVO = gson.fromJson(row, CovidVaccineStatVO.class);
-					rowList.add(covidVO);
-
-				}
-
-				repository.insert(rowList);*/
 
 			}
 
@@ -249,13 +229,7 @@ public class CovidVaccineStatController {
 		return jsonInString;
 	}
 
-//	practice send json
 	public Object sendCovidStat(@RequestBody JsonArray arrayData) {
-		MultiValueMap<String, Object> result = new LinkedMultiValueMap<String, Object>();
-		result.add("arrayData", arrayData.toString());
-
-		Gson gson = new Gson();
-		JsonParser jsonParser = new JsonParser();
 
 		log.info(String.valueOf(arrayData));
 		try {
@@ -266,29 +240,11 @@ public class CovidVaccineStatController {
 
 			HttpHeaders header = new HttpHeaders();
 			header.setContentType(MediaType.APPLICATION_JSON);
-			HttpEntity<?> entity = new HttpEntity<>(result,header);
-			log.info(entity.toString());
+			HttpEntity<?> entity = new HttpEntity<>(arrayData.toString(),header);
 
-			ResponseEntity<Response> response = restTemplate.postForEntity(url, entity, Response.class);
-//			ResponseEntity<MultiValueMap> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.POST, entity, MultiValueMap.class);
-
-			result.add("body", response.getBody());
-
-//			result.put("statusCode", resultMap.getStatusCodeValue());
-//			result.put("header", resultMap.getHeaders());
-//			result.put("body", resultMap.getBody());
-
-			log.info(String.valueOf(result));
-
-
-
-
-
-
+			ResponseEntity<Object> response = restTemplate.postForEntity(url, entity, Object.class);
 
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
-//			result.put("statusCode", e.getRawStatusCode());
-//			result.put("body", e.getStatusText());
 			log.error(e.toString());
 
 		} catch (Exception e) {
@@ -296,6 +252,58 @@ public class CovidVaccineStatController {
 		}
 		return arrayData;
 
+	}
+
+	public String readCovidVaccineStatTodayData() {
+
+		Map<String, Object> result = new HashMap<String, Object>();
+
+		String jsonInString = "";
+
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+
+			LocalDate nowDate = LocalDate.now();
+
+			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+					+ "&perPage=" +ODCLOUD_API_PERSIZE //상수
+					+ "&cond%5BbaseDate%3A%3AEQ%5D="+ nowDate +"%2000%3A00%3A00"
+					+ "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+
+			log.info(url);
+
+			HttpHeaders header = new HttpHeaders();
+			HttpEntity<?> entity = new HttpEntity<>(header);
+
+			log.info("get TodayData");
+
+			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+			result.put("statusCode", resultMap.getStatusCodeValue());
+			result.put("header", resultMap.getHeaders());
+			result.put("body", resultMap.getBody());
+
+			Gson gson = new Gson();
+			JsonParser jsonParser = new JsonParser();
+
+			jsonInString = gson.toJson(resultMap.getBody());
+			JsonElement element = jsonParser.parse(jsonInString);
+			JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
+
+			sendCovidStat(arrayData);
+
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			result.put("statusCode", e.getRawStatusCode());
+			result.put("body", e.getStatusText());
+			log.error(e.toString());
+
+		} catch (Exception e) {
+			result.put("statusCode", "999");
+			result.put("body", "excpetion 오류");
+			log.error(e.toString());
+		}
+
+		return jsonInString;
 	}
 
 }
