@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.gson.*;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.Response;
 import org.daeun.sboot.vo.CovidVaccineStatVO;
@@ -291,6 +292,59 @@ public class CovidVaccineStatController {
 			JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
 
 			sendCovidStat(arrayData);
+
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			result.put("statusCode", e.getRawStatusCode());
+			result.put("body", e.getStatusText());
+			log.error(e.toString());
+
+		} catch (Exception e) {
+			result.put("statusCode", "999");
+			result.put("body", "excpetion 오류");
+			log.error(e.toString());
+		}
+
+		return jsonInString;
+	}
+
+	@GetMapping("/searchTodayData")
+	public String searchCovidVaccineStatTodayData(@RequestParam String nowDate, @RequestParam String sido) {
+		log.info("date = {}, sido = {}", nowDate, sido);
+
+		Map<String, Object> result = new HashMap<String, Object>();
+
+		String jsonInString = "";
+
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+
+			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+					+ "&perPage=" +ODCLOUD_API_PERSIZE //상수
+					+ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8")
+					+ "&cond%5BbaseDate%3A%3AEQ%5D="+ nowDate +"%2000%3A00%3A00"
+					+ "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+
+			log.info(url);
+
+			HttpHeaders header = new HttpHeaders();
+			HttpEntity<?> entity = new HttpEntity<>(header);
+
+			log.info("get TodayData");
+
+			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+			result.put("statusCode", resultMap.getStatusCodeValue());
+			result.put("header", resultMap.getHeaders());
+			result.put("body", resultMap.getBody());
+
+			Gson gson = new Gson();
+			JsonParser jsonParser = new JsonParser();
+
+			jsonInString = gson.toJson(resultMap.getBody());
+			JsonElement element = jsonParser.parse(jsonInString);
+			JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
+
+			log.info("data = {} ", arrayData);
 
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			result.put("statusCode", e.getRawStatusCode());

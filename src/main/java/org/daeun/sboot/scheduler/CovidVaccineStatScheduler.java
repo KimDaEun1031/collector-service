@@ -15,7 +15,7 @@ public class CovidVaccineStatScheduler {
 
     @Scheduled(cron = "*/30 * * * * *")
     public void covidVaccineStatPushSchedule() {
-        controller.readCovidVaccineStatTodayData();
+//        controller.readCovidVaccineStatTodayData();
         log.info("push success!");
     }
 }

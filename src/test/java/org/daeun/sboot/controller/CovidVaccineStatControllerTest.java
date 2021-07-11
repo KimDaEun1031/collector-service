@@ -7,7 +7,7 @@ public class CovidVaccineStatControllerTest {
     @Test
     void covidVaccineStatRow() {
         CovidVaccineStatController controller = new CovidVaccineStatController();
-        controller.readCovidVaccineStatTodayData();
+        controller.readCovidVaccineStatFullData();
 
     }
 }
