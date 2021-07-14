@@ -307,7 +307,7 @@ public class CovidVaccineStatController {
 		return jsonInString;
 	}
 
-	@GetMapping("/searchTodayData")
+	@GetMapping("/searchCovidVaccineStatTodayData")
 	public String searchCovidVaccineStatTodayData(@RequestParam String nowDate, @RequestParam String sido) {
 		log.info("date = {}, sido = {}", nowDate, sido);
 
