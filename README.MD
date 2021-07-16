@@ -162,7 +162,8 @@ PARAMETER에는 서비스키를 추가해야한다.
 #### REST API
 |METHOD|PATH + PARAMETER|DESCRIPTION|
 |------|----|-----------|
-|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D="+ nowDate +"%2000%3A00%3A00|
+|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=nowDate%2000%3A00%3A00|당일 데이터 제공|
+|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=periodDate%2000%3A00%3A00|설정한 기간 데이터 제공|
 
 
 
