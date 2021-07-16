@@ -1,4 +1,4 @@
-package org.daeun.sboot;
+package org.daeun.collector;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,10 +7,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-public class SbootApplication {
+public class CollectorApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SbootApplication.class, args);
+		SpringApplication.run(CollectorApplication.class, args);
 	}
 	
 

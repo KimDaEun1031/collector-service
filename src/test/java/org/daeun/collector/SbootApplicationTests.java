@@ -1,4 +1,4 @@
-package org.daeun.sboot;
+package org.daeun.collector;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

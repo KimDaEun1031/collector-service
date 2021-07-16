@@ -1,4 +1,4 @@
-package org.daeun.sboot.vo;
+package org.daeun.collector.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

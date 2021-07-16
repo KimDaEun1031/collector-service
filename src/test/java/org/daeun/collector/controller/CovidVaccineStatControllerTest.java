@@ -1,4 +1,4 @@
-package org.daeun.sboot.controller;
+package org.daeun.collector.controller;
 
 import org.junit.jupiter.api.Test;
 
