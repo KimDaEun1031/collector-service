@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.daeun</groupId>
-	<artifactId>sboot</artifactId>
+	<artifactId>collector</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>sboot</name>
+	<name>collector</name>
 	<description>Demo project for Spring Boot</description>
 	<properties>
 		<java.version>1.8</java.version>
