@@ -40,3 +40,11 @@ https://freekim.tistory.com/13
 https://mommoo.tistory.com/79
 
 https://ckddn9496.tistory.com/100
+
+# Spring Boot 기반 Microservice Architecture 구현
+![projectImage](https://user-images.githubusercontent.com/73865700/125881025-9d7ad584-59ab-4c8e-a920-519bc8bed14e.png)
+> NOTE
+
+> + Covid19 예방접종 통계 Data를 MSA 기반으로 구축해본다.
+> + Collector_Service에서는 공공데이터 OpenAPI를 polling하여 Data를 수집한다.
+> + 수집 방법은 호출(Get) 방법과 스케쥴링(자정)
