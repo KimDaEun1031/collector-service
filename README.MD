@@ -158,15 +158,13 @@ server.port=9090
 
 ## 3. REST API Server
 
-PARAMETER에는 서비스키를 추가해야한다. 
-+ Base URL : https://api.odcloud.kr/api/15077756/v1/vaccine-stat?page=1&perPage=10&serviceKey=[서비스키]
-
 #### REST API
 |METHOD|PATH + PARAMETER|DESCRIPTION|
 |------|----|-----------|
-|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=nowDate%2000%3A00%3A00|당일 데이터 Push DB Service|
-|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=periodDate%2000%3A00%3A00|설정한 기간 데이터 Push DB Service|
 |GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|당일 데이터 검색 후 반환|
+
+4-2를 추가 후 설명하기
+
 
 ## 4. Controller - Base
 RestTemplate의 exchange 메소드를 이용해 API Data를 호출하였다.
