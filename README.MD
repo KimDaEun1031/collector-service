@@ -41,6 +41,7 @@ https://mommoo.tistory.com/79
 
 https://ckddn9496.tistory.com/100
 
+
 # Spring Boot 기반 Microservice Architecture 구현
 ![collector](https://user-images.githubusercontent.com/73865700/125903094-0fc1b3a4-1c0a-49bf-8afa-fa57fa1e8161.png)
 > NOTE
@@ -168,7 +169,7 @@ PARAMETER에는 서비스키를 추가해야한다.
 |GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=periodDate%2000%3A00%3A00|설정한 기간 데이터 Push DB Service|
 |GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|오늘 데이터 검색 후 제공|
 
-## 4. Controller
+## 4. Controller - Base
 RestTemplate의 exchange 메소드를 이용해 API Data를 호출하였다.
 
 #### RestTemplate란?
@@ -195,6 +196,7 @@ RestTemplate의 exchange 메소드를 이용해 API Data를 호출하였다.
 > + 참고 사이트
 > + https://cchoimin.tistory.com/entry/JAVA-JSON-%EB%8B%A4%EB%A3%A8%EA%B8%B0-%EC%A0%95%EB%A6%AC-JACKSON-ObjectMapper
 
+#### Base Code
 ```
 @GetMapping("/covidVaccineStat")
 public String covidVaccineStat(@RequestParam int month, int day, String sido) {
@@ -233,7 +235,7 @@ public String covidVaccineStat(@RequestParam int month, int day, String sido) {
 ```
 > + 예시 URL : http://localhost:9090/covidVaccineStat?month=4&day=11&sido=서울특별시
 
-#### url
+#### URL
 ```
 + "page=1" + "&perPage=18"
 ```
@@ -247,7 +249,7 @@ url 창에서 입력한 month와 day에 맞는 값을 호출한다.
 ```
 url 창에서 입력한 sido에 맞는 값을 인코딩하여 호출한다.
 
-#### http
+#### Http
 ```
 HttpHeaders header = new HttpHeaders();
 HttpEntity<?> entity = new HttpEntity<>(header);
@@ -255,7 +257,8 @@ HttpEntity<?> entity = new HttpEntity<>(header);
 호출 결과로 http status code, header 정보, body 정보를 확인하기 위해서 header와 httpEntity 객체를 생성한다.
 httpEntity에는 header 정보를 포함한다.  
 
-처음 코드 
+#### Change Code
++ 처음 코드
 ```
 @Override
 public <T> ResponseEntity<T> exchange(String url, HttpMethod method, @Nullable HttpEntity<?> requestEntity, Class<T> responseType, Object... uriVariables)throws RestClientException {
@@ -267,7 +270,7 @@ public <T> ResponseEntity<T> exchange(String url, HttpMethod method, @Nullable H
 UriComponents uri = UriComponentsBuilder.fromHttpUrl(url).build();
 ResponseEntity<Map> resultMap = restTemplate.exchange(uri.toString, HttpMethod.GET, entity, Map.class);
 ```
-바뀐 코드
++ 바뀐 코드
 ```
 @Override
 public <T> ResponseEntity<T> exchange(URI url, HttpMethod method, @Nullable HttpEntity<?> requestEntity, Class<T> responseType) throws RestClientException {
@@ -278,4 +281,151 @@ public <T> ResponseEntity<T> exchange(URI url, HttpMethod method, @Nullable Http
 
 ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
 ```
-UriComponents 클래스는 URI를 동적으로 생성해주는 클래스여서 String 타입인 url을 URI로 build시키는 과정에서 encode시킨다.
+API URL이 이미 인코딩된 상태였다. UriComponents 클래스를 사용했을 때 String 타입인 url을 URI로 build시키는 과정에서 encode 해서 오류가 났다. 그래서 UriComponents 클래스를 사용하지 않고 실행을 해도 오류가 나서 찾아보니 RestTemplate은 기본적으로 org.springframework.web.util.DefaultUriTemplateHandler을 사용해서 String url을 자동으로 Encoding 하는 것을 알았다.  
+변경 : uri.toString -> URI.create(url)
++ 오류 해결 사이트 : https://goni9071.tistory.com/296
+
+## 4-1. Controller - Push
+RestTemplate의 exchange 메소드를 이용해 API Data를 호출하고 DB로 Push한다.
+
+#### Push FullData Code
+```
+RestTemplate restTemplate = new RestTemplate();
+
+LocalDate startDate = LocalDate.of(2021, 03, 11);
+LocalDate nowDate = LocalDate.now();
+
+long betweenDays = ChronoUnit.DAYS.between(startDate, nowDate);
+
+for (int i=0; i<betweenDays; i++) {
+	LocalDate periodDate = startDate;
+	startDate = startDate.plusDays(1);
+	String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+			+ "&perPage=" +ODCLOUD_API_PERSIZE
+			+ "&cond%5BbaseDate%3A%3AEQ%5D="+ periodDate +"%2000%3A00%3A00"
+			+ "&serviceKey=[]";
+
+	log.info("url = {}",url);
+
+	HttpHeaders header = new HttpHeaders();
+	HttpEntity<?> entity = new HttpEntity<>(header);
+
+	log.info("get TodayData");
+
+	ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+	Gson gson = new Gson();
+	JsonParser jsonParser = new JsonParser();
+
+	jsonInString = gson.toJson(resultMap.getBody());
+	JsonElement element = jsonParser.parse(jsonInString);
+	JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
+	log.info("arrayData = {} ", arrayData);
+
+	sendCovidStat(arrayData);
+}	
+```
+데이터가 들어간 처음 날짜와 오늘 날짜를 대조해 그 사이 day 수를 뽑아내서 for문을 돌려서 sendCovidStat 메소드에 값을 전달한다.
+
+#### Push TodayData Code
+```
+RestTemplate restTemplate = new RestTemplate();
+
+LocalDate nowDate = LocalDate.now();
+
+String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+		+ "&perPage=" +ODCLOUD_API_PERSIZE //상수
+		+ "&cond%5BbaseDate%3A%3AEQ%5D="+ nowDate +"%2000%3A00%3A00"
+		+ "&serviceKey=[서비스키]";
+
+log.info("url = {}",url);
+
+HttpHeaders header = new HttpHeaders();
+HttpEntity<?> entity = new HttpEntity<>(header);
+
+log.info("get TodayData");
+
+ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+Gson gson = new Gson();
+JsonParser jsonParser = new JsonParser();
+
+jsonInString = gson.toJson(resultMap.getBody());
+JsonElement element = jsonParser.parse(jsonInString);
+JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
+log.info("arrayData = {} ", arrayData);
+
+sendCovidStat(arrayData);
+```
+오늘 날짜의 데이터를 sendCovidStat 메소드에 전달한다.
+
+#### Send Code
+```
+public Object sendCovidStat(@RequestBody JsonArray arrayData) {
+
+	log.info(String.valueOf(arrayData));
+	try {
+		RestTemplate restTemplate = new RestTemplate();
+
+		String url = "http://localhost:9091/saveCovidVaccineStat";
+		log.info("url = {}",url);
+
+		HttpHeaders header = new HttpHeaders();
+		header.setContentType(MediaType.APPLICATION_JSON);
+		HttpEntity<?> entity = new HttpEntity<>(arrayData.toString(),header);
+
+		ResponseEntity<Object> response = restTemplate.postForEntity(url, entity, Object.class);
+
+	} catch (HttpClientErrorException | HttpServerErrorException e) {
+		log.error(e.toString());
+
+	} catch (Exception e) {
+		log.error(e.toString());
+	}
+	return arrayData;
+```
+FullData와 TodayData 메소드에서 받은 arrayData를 POST 방식으로 DB Controller에 Push한다.
+
+## 4-2. Controller - Search
+RestTemplate의 exchange 메소드를 이용해 당일 데이터를 반환한다.
+
+#### Search TodayData Code
+```
+@GetMapping("/searchCovidVaccineStatTodayData")
+public String searchCovidVaccineStatTodayData(@RequestParam String nowDate, @RequestParam String sido) {
+	log.info("date = {}, sido = {}", nowDate, sido);
+
+	String jsonInString = "";
+
+	try {
+		RestTemplate restTemplate = new RestTemplate();
+
+		String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+				+ "&perPage=" +ODCLOUD_API_PERSIZE
+				+ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8")
+				+ "&cond%5BbaseDate%3A%3AEQ%5D="+ nowDate +"%2000%3A00%3A00"
+				+ "&serviceKey=[서비스키]";
+
+		log.info("url = {}",url);
+
+		HttpHeaders header = new HttpHeaders();
+		HttpEntity<?> entity = new HttpEntity<>(header);
+
+		log.info("get TodayData");
+
+		ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+		Gson gson = new Gson();
+		jsonInString = gson.toJson(resultMap.getBody());
+
+	} catch (HttpClientErrorException | HttpServerErrorException e) {
+		log.error(e.toString());
+
+	} catch (Exception e) {
+		log.error(e.toString());
+	}
+
+	return jsonInString;
+}
+```
+Search Service에서 보낸 nowDate와 sido 값을 호출해 반환한다.
