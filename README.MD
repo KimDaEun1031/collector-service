@@ -159,15 +159,14 @@ server.port=9090
 ## 3. REST API Server
 
 PARAMETER에는 서비스키를 추가해야한다. 
-> + 기본 URL
-> https://api.odcloud.kr/api/15077756/v1/vaccine-stat?page=1&perPage=10&serviceKey=[서비스키]
++ Base URL : https://api.odcloud.kr/api/15077756/v1/vaccine-stat?page=1&perPage=10&serviceKey=[서비스키]
 
 #### REST API
 |METHOD|PATH + PARAMETER|DESCRIPTION|
 |------|----|-----------|
 |GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=nowDate%2000%3A00%3A00|당일 데이터 Push DB Service|
 |GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=periodDate%2000%3A00%3A00|설정한 기간 데이터 Push DB Service|
-|GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|오늘 데이터 검색 후 제공|
+|GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|당일 데이터 검색 후 반환|
 
 ## 4. Controller - Base
 RestTemplate의 exchange 메소드를 이용해 API Data를 호출하였다.
@@ -193,8 +192,7 @@ RestTemplate의 exchange 메소드를 이용해 API Data를 호출하였다.
 + Jackson은 SpringFramework에 내장되어있지만 Gson은 pom.xml에 따로 추가해 줘야 한다.
 ![DFSF](https://user-images.githubusercontent.com/73865700/126108131-08ac158b-01c2-42a9-8aff-ef7a3d26574c.png)
 + 적은 데이터는 GSON, 대량 데이터는 JACKSON이 우수하다.
-> + 참고 사이트
-> + https://cchoimin.tistory.com/entry/JAVA-JSON-%EB%8B%A4%EB%A3%A8%EA%B8%B0-%EC%A0%95%EB%A6%AC-JACKSON-ObjectMapper
++ 참고 사이트 : https://cchoimin.tistory.com/entry/JAVA-JSON-%EB%8B%A4%EB%A3%A8%EA%B8%B0-%EC%A0%95%EB%A6%AC-JACKSON-ObjectMapper
 
 #### Base Code
 ```
@@ -233,7 +231,7 @@ public String covidVaccineStat(@RequestParam int month, int day, String sido) {
 	return jsonInString;
 }
 ```
-> + 예시 URL : http://localhost:9090/covidVaccineStat?month=4&day=11&sido=서울특별시
++ 예시 URL : http://localhost:9090/covidVaccineStat?month=4&day=11&sido=서울특별시
 
 #### URL
 ```
