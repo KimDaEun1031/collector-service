@@ -155,17 +155,127 @@ application.yml에서는 application의 port를 입력한다.
 server.port=9090
 ```
 
-## 3. REST API Server 구축
+## 3. REST API Server
 
 PARAMETER에는 서비스키를 추가해야한다. 
+> + 기본 URL
+> https://api.odcloud.kr/api/15077756/v1/vaccine-stat?page=1&perPage=10&serviceKey=[서비스키]
 
 #### REST API
 |METHOD|PATH + PARAMETER|DESCRIPTION|
 |------|----|-----------|
-|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=nowDate%2000%3A00%3A00|당일 데이터 제공|
-|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=periodDate%2000%3A00%3A00|설정한 기간 데이터 제공|
+|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=nowDate%2000%3A00%3A00|당일 데이터 Push DB Service|
+|GET|/15077756/v1/vaccine-stat?cond%5BbaseDate%3A%3AEQ%5D=periodDate%2000%3A00%3A00|설정한 기간 데이터 Push DB Service|
+|GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|오늘 데이터 검색 후 제공|
 
+## 4. Controller
+RestTemplate의 exchange 메소드를 이용해 API Data를 호출하였다.
 
+#### RestTemplate란?
++ spring 3.0 부터 지원
++ 접근 가능한 외부 HTPP URL를 호출하는 방법 중에 하나로 SpringFramework에서 제공해주는 모듈
++ HTTP 서버와의 통신을 단순화하고 Restful 원칙을 지킴(json, xml을 쉽게 응답 받음 / 동기)
++ 다른 호출방법으로 AsyncRestTemplate(비동기)와 WebClient(동기/비동기)가 존재
 
+#### RestTemplate Method
+![image](https://user-images.githubusercontent.com/73865700/126104985-c4a7fddd-8cc6-44c8-b0b4-6b15a98d96d3.png)
 
+#### @RequestParam
++ @RequestParam은 1개의 HTTP 요청 파라미터를 받기 위해서 사용한다. @RequestParam은 필수 여부가 true이기 때문에 기본적으로 반드시 해당 파라미터가 전송되어야 한다.해당 파라미터가 전송되지 않으면 400 Error를 유발하게 된다. 그렇기 때문에 반드시 필요한 변수가 아니라면 required의 값을 false로 설정해둘 수 있으며 해당 Parameter를 사용하지 않고 요청을 보낼 경우에 default로 받을 값을 defaultValue 옵션을 통해 설정할 수도 있다.
++ @PathVariable과 병행하여 사용해도 상관 없다. REST API에서 값을 호출할 때 주로 많이 사용한다.
 
+#### ResponseEntity
++ ResponseEntity는 HttpEntity 클래스를 상속받아 구현되었으며 사용자의 HttpRequest에 대한 응답 데이터를 포함하는 클래스이다. 따라서 HttpStatus, HttpHeaders, HttpBody를 포함한다.
+
+#### Jackson(ObjectMapper) vs Gson
++ Jackson과 Gson 모두 Java에 대한 JSON 데이터 바인딩 지원을 제공하는 완전한 라이브러리이다. 
++ Jackson은 SpringFramework에 내장되어있지만 Gson은 pom.xml에 따로 추가해 줘야 한다.
+![DFSF](https://user-images.githubusercontent.com/73865700/126108131-08ac158b-01c2-42a9-8aff-ef7a3d26574c.png)
++ 적은 데이터는 GSON, 대량 데이터는 JACKSON이 우수하다.
+> + 참고 사이트
+> + https://cchoimin.tistory.com/entry/JAVA-JSON-%EB%8B%A4%EB%A3%A8%EA%B8%B0-%EC%A0%95%EB%A6%AC-JACKSON-ObjectMapper
+
+```
+@GetMapping("/covidVaccineStat")
+public String covidVaccineStat(@RequestParam int month, int day, String sido) {
+	String jsonInString = "";
+	try {
+		RestTemplate restTemplate = new RestTemplate();
+
+		String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?" 
+				+ "page=1"
+				+ "&perPage=18"
+				+ "&cond%5BbaseDate%3A%3AEQ%5D=2021-0"+ month +"-"+ day +"%2000%3A00%3A00"
+				+ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8") + "&serviceKey=[서비스키]"
+
+		log.info("url = {}",url);
+
+		HttpHeaders header = new HttpHeaders();
+		HttpEntity<?> entity = new HttpEntity<>(header);
+
+		ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);			
+
+		ObjectMapper mapper = new ObjectMapper();
+		jsonInString = mapper.writeValueAsString(resultMap.getBody());
+		
+		Gson gson = new Gson();
+		jsonInString = gson.toJson(resultMap.getBody());
+
+	} catch (HttpClientErrorException | HttpServerErrorException e) {
+		log.error(e.toString());
+
+	} catch (Exception e) {
+		log.error(e.toString());
+}
+
+	return jsonInString;
+}
+```
+> + 예시 URL : http://localhost:9090/covidVaccineStat?month=4&day=11&sido=서울특별시
+
+#### url
+```
++ "page=1" + "&perPage=18"
+```
+page 첫번째부터 perpage는 18개를 호출한다.  
+```
++ "&cond%5BbaseDate%3A%3AEQ%5D=2021-0"+ month +"-"+ day +"%2000%3A00%3A00"
+```
+url 창에서 입력한 month와 day에 맞는 값을 호출한다.
+```
++ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8")
+```
+url 창에서 입력한 sido에 맞는 값을 인코딩하여 호출한다.
+
+#### http
+```
+HttpHeaders header = new HttpHeaders();
+HttpEntity<?> entity = new HttpEntity<>(header);
+```
+호출 결과로 http status code, header 정보, body 정보를 확인하기 위해서 header와 httpEntity 객체를 생성한다.
+httpEntity에는 header 정보를 포함한다.  
+
+처음 코드 
+```
+@Override
+public <T> ResponseEntity<T> exchange(String url, HttpMethod method, @Nullable HttpEntity<?> requestEntity, Class<T> responseType, Object... uriVariables)throws RestClientException {
+	RequestCallback requestCallback = httpEntityCallback(requestEntity, responseType);
+	ResponseExtractor<ResponseEntity<T>> responseExtractor = responseEntityExtractor(responseType);
+	return nonNull(execute(url, method, requestCallback, responseExtractor, uriVariables));
+}
+
+UriComponents uri = UriComponentsBuilder.fromHttpUrl(url).build();
+ResponseEntity<Map> resultMap = restTemplate.exchange(uri.toString, HttpMethod.GET, entity, Map.class);
+```
+바뀐 코드
+```
+@Override
+public <T> ResponseEntity<T> exchange(URI url, HttpMethod method, @Nullable HttpEntity<?> requestEntity, Class<T> responseType) throws RestClientException {
+	RequestCallback requestCallback = httpEntityCallback(requestEntity, responseType);
+	ResponseExtractor<ResponseEntity<T>> responseExtractor = responseEntityExtractor(responseType);
+	return nonNull(execute(url, method, requestCallback, responseExtractor));
+}
+
+ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+```
+UriComponents 클래스는 URI를 동적으로 생성해주는 클래스여서 String 타입인 url을 URI로 build시키는 과정에서 encode시킨다.
