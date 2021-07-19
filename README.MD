@@ -382,7 +382,7 @@ public Object sendCovidStat(@RequestBody JsonArray arrayData) {
 	}
 	return arrayData;
 ```
-FullData와 TodayData 메소드에서 받은 arrayData를 POST 방식으로 DB Controller에 Push한다.
+FullData와 TodayData 메소드에서 받은 arrayData를 POST 방식으로 DB Service에 Push한다.
 
 ## 4-2. Controller - Search
 RestTemplate의 exchange 메소드를 이용해 당일 데이터를 반환한다.
