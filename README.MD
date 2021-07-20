@@ -64,10 +64,8 @@ https://ckddn9496.tistory.com/100
 │       │                         │     └─ Constants.java
 │       │                         ├─ controller
 │       │                         │     └─ CovidVaccineStatController.java
-│       │                         ├─ scheduler
-│       │                         │     └─ CovidVaccineStatScheduler.java
-│       │                         └─ vo
-│       │                               └─ CovidVaccineStatVO.java
+│       │                         └─ scheduler
+│       │                               └─ CovidVaccineStatScheduler.java
 │       └─ resources
 │           └─ application.properties
 │  
