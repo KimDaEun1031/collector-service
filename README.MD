@@ -159,7 +159,7 @@ server.port=9090
 #### REST API
 |METHOD|PATH + PARAMETER|DESCRIPTION|
 |------|----|-----------|
-|GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|오늘 데이터 검색 후 반환|
+|GET|/searchCovidVaccineStatTodayDat|오늘 데이터 검색 후 반환|
 
 #### Controller - Search
 RestTemplate의 exchange 메소드를 이용해 당일 데이터를 Search Service에 반환한다.
