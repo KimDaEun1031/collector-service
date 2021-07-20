@@ -161,9 +161,69 @@ server.port=9090
 #### REST API
 |METHOD|PATH + PARAMETER|DESCRIPTION|
 |------|----|-----------|
-|GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|당일 데이터 검색 후 반환|
+|GET|/searchCovidVaccineStatTodayData?nowDate=?&sido=?|오늘 데이터 검색 후 반환|
 
-4-2를 추가 후 설명하기
+#### Controller - Search
+RestTemplate의 exchange 메소드를 이용해 당일 데이터를 Search Service에 반환한다.
+
++ Search TodayData Code
+```
+@GetMapping("/searchCovidVaccineStatTodayData")
+public String searchCovidVaccineStatTodayData(@RequestParam String nowDate, @RequestParam String sido) {
+	log.info("date = {}, sido = {}", nowDate, sido);
+
+	String jsonInString = "";
+
+	try {
+		RestTemplate restTemplate = new RestTemplate();
+
+		String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
+				+ "&perPage=" +ODCLOUD_API_PERSIZE
+				+ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8")
+				+ "&cond%5BbaseDate%3A%3AEQ%5D="+ nowDate +"%2000%3A00%3A00"
+				+ "&serviceKey=[서비스키]";
+
+		log.info("url = {}",url);
+
+		HttpHeaders header = new HttpHeaders();
+		HttpEntity<?> entity = new HttpEntity<>(header);
+
+		log.info("get TodayData");
+
+		ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
+
+		Gson gson = new Gson();
+		jsonInString = gson.toJson(resultMap.getBody());
+
+	} catch (HttpClientErrorException | HttpServerErrorException e) {
+		log.error(e.toString());
+
+	} catch (Exception e) {
+		log.error(e.toString());
+	}
+
+	return jsonInString;
+}
+```
+**INFO**  
+코로나 백신 예방접종 통계 API를 이용한 Restful API Server
+
+**HOST**  
+localhost:9090
+
+**PATH(GET)**  
+/searchCovidVaccineStatTodayData
+
+**PARAMETERS**  
+1. nowDate  
+	- in : query  
+	- description : 오늘 날짜(기본값-오늘)  
+	- type : string  
+
+2. sido
+	- in : query  
+	- description : 지역명칭(기본값-전국)
+	- type : string  
 
 
 ## 4. Controller - Base
@@ -382,46 +442,3 @@ public Object sendCovidStat(@RequestBody JsonArray arrayData) {
 ```
 FullData와 TodayData 메소드에서 받은 arrayData를 POST 방식으로 DB Service에 Push한다.
 
-## 4-2. Controller - Search
-RestTemplate의 exchange 메소드를 이용해 당일 데이터를 반환한다.
-
-#### Search TodayData Code
-```
-@GetMapping("/searchCovidVaccineStatTodayData")
-public String searchCovidVaccineStatTodayData(@RequestParam String nowDate, @RequestParam String sido) {
-	log.info("date = {}, sido = {}", nowDate, sido);
-
-	String jsonInString = "";
-
-	try {
-		RestTemplate restTemplate = new RestTemplate();
-
-		String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
-				+ "&perPage=" +ODCLOUD_API_PERSIZE
-				+ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8")
-				+ "&cond%5BbaseDate%3A%3AEQ%5D="+ nowDate +"%2000%3A00%3A00"
-				+ "&serviceKey=[서비스키]";
-
-		log.info("url = {}",url);
-
-		HttpHeaders header = new HttpHeaders();
-		HttpEntity<?> entity = new HttpEntity<>(header);
-
-		log.info("get TodayData");
-
-		ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
-
-		Gson gson = new Gson();
-		jsonInString = gson.toJson(resultMap.getBody());
-
-	} catch (HttpClientErrorException | HttpServerErrorException e) {
-		log.error(e.toString());
-
-	} catch (Exception e) {
-		log.error(e.toString());
-	}
-
-	return jsonInString;
-}
-```
-Search Service에서 보낸 nowDate와 sido 값을 호출해 반환한다.
