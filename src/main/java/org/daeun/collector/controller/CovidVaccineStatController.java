@@ -24,7 +24,7 @@ import static org.daeun.collector.constants.Constants.ODCLOUD_API_PERSIZE;
 public class CovidVaccineStatController {
 
 	@GetMapping("/covidVaccineStat")
-	public String covidVaccineStat(@RequestParam String month, String day, String sido) {
+	public String covidVaccineStat(@RequestParam int month, int day, String sido) {
 		String jsonInString = "";
 		try {
 			RestTemplate restTemplate = new RestTemplate();
@@ -32,18 +32,18 @@ public class CovidVaccineStatController {
 			String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
 					+ "page=1"
 					+ "&perPage=18"
-					+ "&cond%5BbaseDate%3A%3AEQ%5D=2021-"+ month +"-"+ day +"%2000%3A00%3A00"
-					+ "&cond%5Bsido%3A%3AEQ%5D=" + URLEncoder.encode(sido, "UTF-8") + "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
+					+ "&cond%5BbaseDate%3A%3AEQ%5D=2021-0"+ month +"-"+ day +"%2000%3A00%3A00"
+					+ "&cond%5Bsido%3A%3AEQ%5D=" + sido + "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
 			log.info("url = {}",url);
 
 			HttpHeaders header = new HttpHeaders();
 			HttpEntity<?> entity = new HttpEntity<>(header);
 
-			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);			
+			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
 
             ObjectMapper mapper = new ObjectMapper();
 			jsonInString = mapper.writeValueAsString(resultMap.getBody());
-           
+
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			log.error(e.toString());
 
@@ -141,11 +141,11 @@ public class CovidVaccineStatController {
 			long betweenDays = ChronoUnit.DAYS.between(startDate, nowDate);
 
 			for (int i=0; i<betweenDays; i++) {
-				LocalDate baseDate = startDate;
+				LocalDate periodDate = startDate;
 				startDate = startDate.plusDays(1);
 				String url = "https://api.odcloud.kr/api/15077756/v1/vaccine-stat?"
 						+ "&perPage=" +ODCLOUD_API_PERSIZE
-						+ "&cond%5BbaseDate%3A%3AEQ%5D="+ baseDate +"%2000%3A00%3A00"
+						+ "&cond%5BbaseDate%3A%3AEQ%5D="+ periodDate +"%2000%3A00%3A00"
 						+ "&serviceKey=HGz5UDF80tY61L5yPZe3Ji96a0VZwzAzSwwlbvkRjxMAscm3dZybsbX2v4HlACe%2BBgRhZT2LpzY6VV9D6bjJyg%3D%3D";
 
 				log.info("url = {}",url);
@@ -272,13 +272,7 @@ public class CovidVaccineStatController {
 			ResponseEntity<Map> resultMap = restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, Map.class);
 
 			Gson gson = new Gson();
-			JsonParser jsonParser = new JsonParser();
-
 			jsonInString = gson.toJson(resultMap.getBody());
-			JsonElement element = jsonParser.parse(jsonInString);
-			JsonArray arrayData = (JsonArray) element.getAsJsonObject().get("data");
-
-			log.info("arrayData = {} ", arrayData);
 
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			log.error(e.toString());
