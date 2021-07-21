@@ -50,6 +50,10 @@ https://ckddn9496.tistory.com/100
 > + Service는 Spring boot Project로 구현된다.
 > + JPA repository로 DB(MongoDB)에 접근한다.
 > + MSA는 서비스 별로 형성관리를 분리함으로 이번 Study에서 분리 개발했다.
+> + DB Service는 Collector Service에서 Push한 데이터를 받아 DB에 Insert한다.
+> + https://github.com/KimDaEun1031/db_service
+> + Search Service는 Collector Service에 값을 요청에 데이터를 return 받아 화면에 송출한다.
+> + https://github.com/KimDaEun1031/search_service
 
 ## Collector Service Description
 #### Project directory tree
